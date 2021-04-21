@@ -1,11 +1,11 @@
 # axios 二次封装
   相同错误处理   配合message回调使用 相同错误抛出一次  
-  防抖          相同的接口一定时间里只触发第一次
-  通用方法        Request
-  get url传参     GetByUrl
-  post url传参    PostByUrl
-  get body传参    GetByBody
-  post body传参   PostByBody
+  防抖          相同的接口一定时间里只触发第一次  
+  通用方法        Request  
+  get url传参     GetByUrl  
+  post url传参    PostByUrl  
+  get body传参    GetByBody  
+  post body传参   PostByBody  
 
 ## 安装
 
