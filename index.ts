@@ -1,4 +1,4 @@
-import Axios from 'axios'
+const Axios = require('axios')
 /**
    * 
    * @param { baseURL: 'https://api.***.com' } String 域名 必传参数
@@ -15,8 +15,14 @@ import Axios from 'axios'
    * @param { rej: (err) => {} } 函数 请求失败处理 回传参数err
    * @param { await: [{ method: 请求方式, url: 请求路径 }] } Array 需要同步的接口 方式为可选参数，路径为必传参数
   **/
-class NewAxios {
-  constructor(config) {
+export default class NewAxios {
+  config: any
+  lineUp: any
+  errTimeout: any
+  instance: any
+  errorArr: Object[]
+  antiShake: any[]
+  constructor(config: any) {
     this.config = {
       method: 'get', // 请求方式
       timeout: 3000, // 请求时长
@@ -41,7 +47,7 @@ class NewAxios {
     Object.assign(this.config, config)
     if (this.config.await && this.config.await.length) {
       this.config.switch = true
-      this.config.await.forEach(item => {
+      this.config.await.forEach((item: any) => {
         const val = JSON.stringify(item)
         this.lineUp.await.push(val)
       })
@@ -50,22 +56,22 @@ class NewAxios {
     this.interceptors()
   }
 
-  async reset (options) {
+  async reset (options: any) {
     options && Object.assign(this.config, options)
   }
 
   async interceptors () { // 请求拦截
     return new Promise(res => {
       this.instance = Axios.create({})
-      this.instance.interceptors.request.use(async config => {
+      this.instance.interceptors.request.use(async (config: any) => {
         this.config.reqFn && await this.config.reqFn(config)
         return config
-      }, err => Promise.reject(err))
+      }, (err: any) => Promise.reject(err))
 
-      this.instance.interceptors.response.use(async response => {
+      this.instance.interceptors.response.use(async (response: any) => {
         this.config.resFn && await this.config.resFn(response)
         return response
-      }, err => {
+      }, (err: any) => {
         if (
           err.message.includes("timeout") ||
           err.message.includes("Network Error")
@@ -89,7 +95,7 @@ class NewAxios {
   errorHandling () {
     clearTimeout(this.errTimeout);
     this.errTimeout = setTimeout(() => {
-      this.errorArr.forEach(item => {
+      this.errorArr.forEach((item: any) => {
         if (item.type) {
           item.type = 0;
           this.config.message && this.config.message({
@@ -103,11 +109,11 @@ class NewAxios {
     }, 500)
   }
 
-  getError (data, prompt) {
+  getError (data: any, prompt: boolean | string) {
     if (data.code && prompt) {
       if (this.errorArr.length) {
         const isExists = this.errorArr.every(
-          item => (item.val === data.message)
+          (item: any) => (item.val === data.message)
         )
         !isExists && this.errorArr.push({
           type: 1,
@@ -122,13 +128,13 @@ class NewAxios {
     }
   }
 
-  clearAntiShake (tag) {
+  clearAntiShake (tag: any) {
     this.config.isAntiShake && setTimeout(() => {
       delete this.antiShake[tag]
     }, this.config.antiShakeTime || this.config.timeout)
   }
 
-  parade (obj) {
+  parade (obj: any) {
     const { method, url } = obj
     const tag = JSON.stringify({ method, url })
     if (this.lineUp.await.includes(url) || this.lineUp.await.includes(tag)) {
@@ -139,7 +145,7 @@ class NewAxios {
     clearTimeout(this.lineUp.timeout)
     this.lineUp.timeout = setTimeout(() => {
       Promise.all(this.lineUp.first).then(() => {
-        this.lineUp.after.forEach(params => {
+        this.lineUp.after.forEach((params: any) => {
           this.Request(params)
         })
         this.lineUp.first.length = 0
@@ -153,7 +159,7 @@ class NewAxios {
     }, 500)
   }
 
-  Request (obj) {
+  Request (obj: any) {
     obj = obj || {}
     const {
       url = this.config.url,
@@ -170,7 +176,7 @@ class NewAxios {
     //   this.parade(obj)
     //   return
     // }
-    const tag = JSON.stringify(obj)
+    const tag: any = JSON.stringify(obj)
     if (this.config.isAntiShake) {
       if (this.antiShake[tag]) {
         return Promise.reject({
@@ -194,11 +200,11 @@ class NewAxios {
         headers: headers, // header体
         data: data, // body参数
         params: params //  URL参数
-      }).then(resData => {
+      }).then((resData: any) => {
         this.getError(resData.data, prompt)
         this.clearAntiShake(tag)
         resolve(resData.data)
-      }).catch(err => {
+      }).catch((err: any) => {
         this.clearAntiShake(tag)
         reject(err)
         return err
@@ -206,7 +212,7 @@ class NewAxios {
     })
   }
 
-  GetByUrl(url, params, prompt, timeout) {
+  GetByUrl(url: string, params: Object, prompt: boolean | string, timeout: number) {
     return this.Request({
       method: "get", // 请求方式
       url, // 请求路径
@@ -216,7 +222,7 @@ class NewAxios {
     })
   }
 
-  PostByUrl(url, params, prompt, timeout) {
+  PostByUrl(url: string, params: Object, prompt: boolean | string, timeout: number) {
     return this.Request({
       method: "post", // 请求方式
       url, // 请求路径
@@ -225,8 +231,8 @@ class NewAxios {
       params //  URL参数
     })
   }
-
-  GetByBody(url, data, prompt, timeout) {
+  
+  GetByBody(url: string, data: Object, prompt: boolean | string, timeout: number) {
     return this.Request({
       method: "get", // 请求方式
       url, // 请求路径
@@ -239,7 +245,7 @@ class NewAxios {
     })
   }
 
-  PostByBody(url, data, prompt, timeout) {
+  PostByBody(url: string, data: Object, prompt: boolean | string, timeout: number) {
     return this.Request({
       method: "post", // 请求方式
       url, // 请求路径
@@ -252,5 +258,3 @@ class NewAxios {
     })
   }
 }
-
-export default NewAxios
