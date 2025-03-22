@@ -1,6 +1,8 @@
 node_modules
+interface
 /src
-/index.js
+/terser.js
+/test
 
 .idea
 .vscode

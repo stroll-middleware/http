@@ -1,92 +1,232 @@
-# axios 二次封装
-  相同错误处理   配合message回调使用 相同错误抛出一次  
-  防抖          相同的接口一定时间里只触发第一次  
-  通用方法        Request  
-  get url传参     GetByUrl  
-  post url传参    PostByUrl  
-  get body传参    GetByBody  
-  post body传参   PostByBody  
-
-## 安装
-
+### 安装
+````js
+npm i -S @stroll/http
+````
+### 引入
 ```js
-npm i @stroll/axios
-
+import http from "@stroll/http";
 ```
-## 引入
+
+调用
 ```js
-import axios from '@stroll/axios'
-// 声明实例并初始化参数
-const Axios = new axios({
-  baseURL: 'https://api.***.com', // String 域名 必传参数
-  url: '/getUserInfo', // String 请求路径 必传参数(初始化可不传)
-  method: 'get' | 'post' | 'put' | 'delete' | ..., // String 请求方式 可选参数 默认get
-  timeout: 3000, // Number 请求超时 单位毫秒 可选参数 默认3秒
-  isAntiShake: true, // 防抖开关
-  antiShakeTime: null, // 防抖时间，需打开isAntiShake， 默认使用timeout
-  withCredentials: true | false, // Boolean 是否允许携带凭证 可选参数 默认true
-  headers: {}, // Json header体 可选参数 默认为空
-  data: {}, // Json|Number|String|Array body体 可选参数 默认为空
-  params: {}, // Json URL参数 可选参数 默认为空
-  message: null, // 错误处理（需打开prompt）
-  reqFn: (config) => {}, // 函数 请求前拦截 参数config
-  resFn: (response) => {}, // 函数 响应后拦截 参数response
-  // 未实现
-  await: [{ method: '请求方式', url: '请求路径' } | '请求路径'], // Array[{Json}|String] 需要同步的接口 方式为可选参数，路径为必传参数
+/** config 配置
+ * @param {string} baseURL 基础URL
+ * @param {string} method 请求方法
+ * @param {string} url 请求地址
+ * @param {string} headers 请求头
+ * @param {string} body 请求体
+ * @param {string} params 请求参数
+ * @param {string} signal 关闭标识
+ * @param {string} timeout 超时时间
+ * @param {string} requestInterceptors 请求拦截器
+ * @param {string} responseInterceptors 响应拦截器
+ * @param {string} onError 错误处理
+ * @param {string} keepalive 是否允许关闭页面后继续发送请求
+ * @param {string} credentials 确定浏览器是否应该发送cookie， omit 不发送， same-origin 发送同域的cookie， cors 发送跨域的cookie， navigate 发送所有cookie
+ * @param {string} mode 设置请求的跨域行为
+ * @param {string} referrer 指定用于请求的 Referer 标头的值字符串
+ * @param {string} referrerPolicy 一个设置 Referer 标头策略的字符串。此选项的语法和语义与 Referrer-Policy 标头完全相同。
+ * @param {string} browsingTopics 布尔值，指定应将当前用户的选定主题发送到与请求关联的 Sec-Browsing-Topics 标题中。
+ * @param {string} cache 请求要使用的缓存模式
+ * @param {string} priority 指定了 fetch 请求相对于同一类型的其他请求的优先级
+ * @param {string} responseType null
+ * @param {string} window null
+ * @param {string} dispatcher
+ * @param {string} duplex half
+ */
+export const HTTP = http.create({
+  baseURL: 'http://127.0.0.1:6060',
+  timeout: 3000,
+  // 请求拦截器
+  requestInterceptors: (config) => {
+    // ...
+    return config
+  },
+  // 响应拦截器
+  responseInterceptors: (response) => {
+    // ...
+    return response
+  },
+  // 错误处理
+  onError: (error) => {
+    // ...
+  }
+})
+//or 
+export const HTTP = new http({
+  baseURL: 'http://127.0.0.1:6060',
+  timeout: 3000,
+})
+
+HTTP.interceptRequest((config)) => {
+  console.log('请求拦截器')
+  return config;
+})
+HTTP.interceptResponse((response)) => {
+  console.log('响应拦截器')
+  return response;
+}
+HTTP.onError((err)) => {
+  console.log('错误处理')
+}
+```
+取消请求
+```js
+HTTP.cancel('请求时定义的 signal')
+```
+get 请求
+```js
+
+HTTP.get({
+  url:'/test',
+  params: {
+    a: 1
+  },
+}).then((res) => {
+  console.log('res', res.data)
+})
+
+//  下载文件
+HTTP.getDL({
+  url:'/test',
+  params: {
+    a: 1
+  },
+}, (res) => {
+  console.log('进度', res)
+}).then((res) => {
+  console.log('res', res.data)
 })
 ```
-## 通用调用
+post 请求
 ```js
-Axios.Request({
-  url: '/getUserInfo', // String 请求路径 必传参数
-  withCredentials: true | false, // Boolean 是否允许携带凭证 可选参数 默认true
-  method: 'get' | 'post' | 'put' | 'delete' | ..., // String 请求方式 可选参数 默认get
-  timeout: 3000, // Number 请求超时 单位毫秒 可选参数 默认3秒
-  headers: {}, // Json header体 可选参数 默认为空
-  data: {}, // Json|Number|String|Array body体 可选参数 默认为空
-  params: {}, // Json URL参数 可选参数 默认为空
-}).then(res => {
-  // 成功回调
-}).catch(err => {
-  // 失败回调
+HTTP.post({
+  url:'/test',
+  params: {b:1},
+  body: {a:2}
+}).then((res) => {
+  console.log('res', res.data)
+})
+
+// 表单
+HTTP.postForm({
+  url:'/test',
+  body: {a:2}
+}).then((res) => {
+  console.log('res', res.data)
+})
+
+// 下载文件
+HTTP.postDL({
+  url:'/test',
+  params: {b:1},
+  body: {a:2}
+}).then((res) => {
+  console.log('res', res.data)
+})
+
+// 上传文件
+HTTP.postFileForm({
+  url:'/test',
+  params: {b:1},
+  body: {a:2， file：File||File[]},
+}, (res) => {
+  console.log('进度', res)
+}).then((res) => {
+  console.log('res', res.data)
 })
 ```
+path 请求
+```js
+HTTP.path({
+  url:'/test',
+  params: {b:1},
+  body: {a:2}
+}).then((res) => {
+  console.log('res', res.data)
+})
 
-## get方式URL传参
-```js
-Axios.GetByUrl(
-  url, // 请求路径
-  params, //  URL参数
-  prompt, // 是否关闭提示
-  timeout // 请求超时
-)
-```
+// 表单
+HTTP.pathForm({
+  url:'/test',
+  body: {a:2}
+}).then((res) => {
+  console.log('res', res.data)
+})
 
-## post方式URL传参
-```js
-Axios.PostByUrl(
-  url, // 请求路径
-  params, //  URL参数
-  prompt, // 是否关闭提示
-  timeout // 请求超时
-)
+// 上传文件
+HTTP.pathFileForm({
+  url:'/test',
+  params: {b:1},
+  body: {a:2， file：File||File[]},
+}, (res) => {
+  console.log('进度', res)
+}).then((res) => {
+  console.log('res', res.data)
+})
 ```
-## get方式body传参
+put 请求
 ```js
-Axios.GetByBody(
-  url, // 请求路径
-  data, // body参数
-  prompt, // 是否关闭提示
-  timeout // 请求超时
-)
-```
+HTTP.put({
+  url:'/test',
+  params: {b:1},
+  body: {a:2}
+}).then((res) => {
+  console.log('res', res.data)
+})
 
-## post方式body传参
+// 表单
+HTTP.putForm({
+  url:'/test',
+  body: {a:2}
+}).then((res) => {
+  console.log('res', res.data)
+})
+
+// 上传文件
+HTTP.putFileForm({
+  url:'/test',
+  params: {b:1},
+  body: {a:2， file：File||File[]},
+}, (res) => {
+  console.log('进度', res)
+})
+```
+connect 请求 建立一个允许后端不断推送信息的连接
 ```js
-Axios.PostByBody(
-  url, // 请求路径
-  data, // body参数
-  prompt,
-  timeout // 请求超时
-)
+const ES = HTTP.connect({
+  url:'/test'
+}, (res) => {
+  console.log('后端推送的信息', res)
+}).then((res) => {
+  console.log('res', res.data)
+})
+
+// 关闭
+ES.close()
+```
+delete 请求
+```js
+HTTP.delete({
+  url:'/test',
+  params: {b:1},
+  body: {a:2}
+}).then((res) => {
+  console.log('res', res.data)
+})
+```
+head 请求
+```js
+HTTP.head({
+  url:'/test',
+  params: {b:1},
+})
+```
+options 请求
+```js
+HTTP.options({
+  url:'/test',
+  params: {b:1},
+  body: {a:2}
+})
 ```

@@ -1,48 +1,53 @@
 {
-  "name": "@stroll/axios",
-  "version": "0.0.1",
-  "description": "HTTP",
-  "main": "dist/index.cjs.js",
-  "module": "dist/index.esm.js",
+  "name": "@stroll/http",
+  "version": "0.1.0",
+  "description": "数据交互",
+  "main": "dist/index.js",
   "types": "dist/index.d.ts",
+  "directories": {
+    "doc": "doc",
+    "test": "test"
+  },
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1",
-    "build": "rimraf dist && rollup -c"
+    "dev": "cross-env NODE_ENV=dev nodemon src/index.ts",
+    "start": "cross-env NODE_ENV=dev nodemon dist/index.js",
+    "build": "cross-env NODE_ENV=pro npm run clear && npm run es5",
+    "clear": "rm -rf dist",
+    "es5": "npx tsc -p .",
+    "mini": "node terser.js",
+    "jo": "javascript-obfuscator ./dist --output ./dist",
+    "build-mini": "npm run build && npm run mini && npm run jo",
+    "p-l": "npm run build-mini && npm publish --access public",
+    "patch": "npm version patch && npm run p-l",
+    "minor": "npm version minor && npm run p-l",
+    "major": "npm version major && npm run p-l",
+    "test": "nodemon test/index.ts"
+  },
+  "devDependencies": {
+    "@types/koa": "^2.15.0",
+    "@types/koa-router": "^7.4.8",
+    "@types/node": "^22.13.9",
+    "cross-env": "^7.0.3",
+    "javascript-obfuscator": "^4.1.1",
+    "koa": "^2.16.0",
+    "koa-router": "^13.0.1",
+    "nodemon": "^3.1.9",
+    "terser": "^5.39.0",
+    "ts-node": "^10.9.2",
+    "typescript": "^5.7.3"
   },
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/stroll-liu/axios.git"
+    "url": "git+https://github.com/stroll-middleware/http.git"
   },
-  "keywords": [
-    "http",
-    "请求",
-    "axios",
-    "防抖",
-    "相同错误处理"
-  ],
-  "author": "stroll-liu",
+  "author": "",
   "license": "ISC",
   "bugs": {
-    "url": "https://github.com/stroll-liu/axios/issues"
+    "url": "https://github.com/stroll-middleware/http/issues"
   },
-  "homepage": "https://github.com/stroll-liu/axios#readme",
-  "devDependencies": {
-    "@babel/core": "^7.16.7",
-    "@babel/plugin-transform-runtime": "^7.16.8",
-    "@babel/runtime": "^7.16.7",
-    "@rollup/plugin-babel": "^5.3.0",
-    "@rollup/plugin-commonjs": "^21.0.1",
-    "@rollup/plugin-json": "^4.1.0",
-    "@rollup/plugin-node-resolve": "^13.1.3",
-    "@types/node": "^17.0.8",
-    "rimraf": "^3.0.2",
-    "rollup": "^2.63.0",
-    "rollup-plugin-dts": "^4.1.0",
-    "rollup-plugin-terser": "^7.0.2",
-    "rollup-plugin-typescript2": "^0.31.1",
-    "typescript": "^4.5.4"
-  },
-  "dependencies": {
-    "axios": "^0.24.0"
+  "homepage": "https://github.com/stroll-middleware/http#readme",
+  "engines": {
+    "node": ">=16.20.0",
+    "npm": ">=8.19.4"
   }
 }
