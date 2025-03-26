@@ -67,7 +67,7 @@ export async function REQUEST(
   }
 
   return new Promise((resolve, reject) => {
-    fetch('config.url', config as any).then(async (response: any) => {
+    fetch(config.url, config as any).then(async (response: any) => {
       listeners && await listeners(response)
       let data = await response.text()
       if(data){
