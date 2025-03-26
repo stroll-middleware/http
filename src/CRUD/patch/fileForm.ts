@@ -17,7 +17,7 @@ export async function PATCHFILEFORM(
   },
   onProgress?: (progress: { [s: string]: number; }) => void
 ) {
-  url = params ? spliceUrl(url, params) : url;
+  config.url = params ? spliceUrl(url, params) : url;
   config.body = formData(body);
   if (onProgress) {
     const fileArr: File[] = [];
@@ -35,7 +35,7 @@ export async function PATCHFILEFORM(
 
     fileProgress(fileArr, onProgress);
   }
-  return this.request(url, config);
+  return this.request(config);
 }
 
 export default PATCHFILEFORM;

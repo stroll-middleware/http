@@ -23,7 +23,7 @@ export async function POSTFILEFORM (
   },
   onProgress?: (progress: { [s: string]: number; }) => void
 ) {
-  url = params ? spliceUrl(url, params) : url;
+  config.url = params ? spliceUrl(url, params) : url;
   config.method = "POST";
   config.body = formData(body);
   if (onProgress) {
@@ -42,7 +42,7 @@ export async function POSTFILEFORM (
       
       fileProgress(fileArr, onProgress);
     }
-    return this.request(url, config);
+    return this.request(config);
 }
 
 export default POSTFILEFORM;

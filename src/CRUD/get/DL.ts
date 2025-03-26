@@ -43,13 +43,13 @@ export async function GETDL(
     throw new Error('GET请求不允许有body参数')
   }
   // 构建完整 URL
-  const fullUrl = buildRequestUrl(url, params);
+  config.url = buildRequestUrl(url, params);
 
   // 设置默认请求方法
   config.method = "GET";
 
   // 发起请求并处理响应
-  return this.request(fullUrl, config).then((response: Response) => {
+  return this.request(config).then((response: Response) => {
     try {
       return handleResponseWithProgress(response, onProgress);
     } catch (error) {

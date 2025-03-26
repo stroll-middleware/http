@@ -25,10 +25,10 @@ export async function POSTDL (
   onProgress?: (progress: number) => void
 ) {
   
-  url = params ? spliceUrl(url, params) : url;
+  config.url = params ? spliceUrl(url, params) : url;
   config.body = body && typeof body !== 'string' ? JSON.stringify(body) : body;
   config.method = "POST";
-  return this.request(url, config).then(
+  return this.request(config).then(
     (response: {
       headers: { get: (arg0: string) => any };
       body: { getReader: () => any };

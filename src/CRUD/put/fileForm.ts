@@ -17,7 +17,7 @@ export function PUTFILEFORM(
   },
   onProgress?: (progress: {[s: string]:number}) => void
 ) {
-  url = params ? spliceUrl(url, params) : url;
+  config.url = params ? spliceUrl(url, params) : url;
   config.method = "PUT";
   config.body = formData(body);
   if (onProgress) {
@@ -36,7 +36,7 @@ export function PUTFILEFORM(
     
     fileProgress(fileArr, onProgress);
   }
-  return this.request(url, config);
+  return this.request(config);
 }
 
 export default PUTFILEFORM;

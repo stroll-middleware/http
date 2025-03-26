@@ -2,6 +2,7 @@ import Koa from "koa";
 import Router from "koa-router";
 import fs from "fs";
 import path from "path";
+import {PassThrough} from "stream";
 
 const app = new Koa();
 const router = new Router();
@@ -31,6 +32,34 @@ router.get("/arraybuffer", async (ctx) => {
   } catch (error) {
     ctx.status = 500;
     ctx.body = { error: "Internal Server Error" };
+  }
+});
+
+// 新增路由：返回数据流
+router.get("/stream", async (ctx) => {
+  const text = "This is a stream of data from Koa, similar to DeepSeek.";
+  const chunkSize = 1; // 每次发送3个字节
+
+  ctx.set({
+    'Content-Type': 'application/octet-stream',
+    'Cache-Control': 'no-cache',
+    'Connection': 'keep-alive'
+  });
+
+  const ss = new PassThrough();
+  ctx.body = ss;
+  // 使用定时器来模拟任务
+  for (let i = 0; i < text.length; i += chunkSize) {
+    try {// 模拟延迟
+      await new Promise((resolve) => setTimeout(resolve, 1000));
+      const val = text.slice(i, i + chunkSize)
+      console.log('val', val)
+      ss.push(val);
+    } catch (error) {
+      ctx.status = 500;
+      ctx.body = { error: "Internal Server Error" };
+      return;
+    }
   }
 });
 

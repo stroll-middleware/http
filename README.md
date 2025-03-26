@@ -6,7 +6,15 @@ npm i -S @stroll/http
 ```js
 import http from "@stroll/http";
 ```
-
+```js
+let data = await response.text()
+if(data){
+  if (isJSON(data)) {
+    data = JSON.parse(data);
+  }
+}
+response.data = data
+```
 调用
 ```js
 /** config 配置

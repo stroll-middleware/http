@@ -23,11 +23,11 @@ export function OPTIONS (
     config?: Expand<configType>;
   },
 ) {
-  url = params ? spliceUrl(url, params) : url;
+  config.url = params ? spliceUrl(url, params) : url;
   config.body = body && typeof body !== 'string' ? JSON.stringify(body) : body;
   config.method = 'OPTIONS'
   
-  return this.request(url, config)
+  return this.request(config)
 }
 
 export default OPTIONS;

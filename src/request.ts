@@ -16,21 +16,15 @@ function clearCancelMark(this: any, reqKey: string, signal?: string) {
 
 export async function REQUEST(
   this: any,
-  input: Expand<configType> | URL | string,
-  init: Expand<configType> = {}
+  init: Expand<configType> = {},
+  listeners?: Function
 ) {
   // 初始化控制器和配置
   const controller = new AbortController();
   let config = this.initConfig(init as any);
 
-  // 处理 input 类型
-  if (typeof input !== "string") {
-    config = { ...input, ...init };
-    input = init.url || "";
-  }
-
   // 生成请求唯一标识
-  const reqKey = generateReqKey(input, config);
+  const reqKey = generateReqKey(config.url, config);
 
   // 检查是否存在重复请求
   if (this.requestList[reqKey]) {
@@ -59,7 +53,7 @@ export async function REQUEST(
 
   // 基础 URL 处理
   if (config.baseURL) {
-    input = new URL(input as string, config.baseURL);
+    config.url = `${config.baseURL}${config.url}`;
   }
 
   // 请求拦截器
@@ -73,7 +67,8 @@ export async function REQUEST(
   }
 
   return new Promise((resolve, reject) => {
-    fetch(input as any, config as any).then(async (response: any) => {
+    fetch('config.url', config as any).then(async (response: any) => {
+      listeners && await listeners(response)
       let data = await response.text()
       if(data){
         if (isJSON(data)) {
@@ -99,9 +94,8 @@ export async function REQUEST(
     }).catch((err)=>{
       this.config.onError && this.config.onError(err);
       this.errorListener && this.errorListener(err);
-      if(!this.config.onError && !this.errorListener) {
-        return err;
-      }
+      console.error(err)
+      return err;
     }).finally(() => {
       clearTimeout(timeout);
       clearCancelMark.call(this, reqKey, signal);

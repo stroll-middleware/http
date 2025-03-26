@@ -247,27 +247,23 @@ export class http {
 
   /** 请求
    *
-   * @param input 请求地址或请求配置集合
    * @param init 请求配置
    * @returns Promise
    */
   request(
-    input: Expand<configType> | URL | string,
-    init: Expand<configType> = {}
+    config: Expand<configType> = {}
   ) {
-    return REQUEST.call(this, input, init);
+    return REQUEST.call(this, config);
   }
   /** 请求
    *
-   * @param input 请求地址或请求配置集合
    * @param init 请求配置
    * @returns Promise
    */
   static request(
-    input: Expand<configType> | URL | string,
-    init: Expand<configType> = {}
+    config: Expand<configType> = {}
   ) {
-    return REQUEST.call(this, input, init);
+    return REQUEST.call(this, config);
   }
 
   /** 用于获取资源
@@ -330,6 +326,27 @@ export class http {
     onProgress?: (progress: number) => void
   ) {
     return CRUD.GETDL.call(this, info, onProgress);
+  }
+  /** 需要后端返回数据流
+   * 
+   * @param info - {url, params, body, config}
+   * - param.url - 请求地址
+   * - param.params - url 请求参数
+   * - param.body - body 请求参数
+   * - param.config - 配置项
+   * @param listeners 回调函数
+   * @returns
+   */
+  getStreamText(
+    info: {
+      url: string;
+      params?: Expand<dataType>;
+      body?: Expand<bodyType> | jsonArrType | jsonObjType;
+      config?: Expand<configType>;
+    },
+    listeners: (res: any) => void
+  ) {
+    return CRUD.GETSTREAMTEXT.call(this, info, listeners);
   }
   /** 下载文件,想获取进度,需要后端返回文件流（fs.createReadStream(filePath)）
    *
@@ -543,6 +560,17 @@ export class http {
     onProgress?: (progress: { [s: string]: number }) => void
   ) {
     return CRUD.POSTFILEFORM.call(this, info, onProgress);
+  }
+  postStreamText(
+    info: {
+      url: string;
+      params?: Expand<dataType>;
+      body?: Expand<bodyType> | jsonArrType | jsonObjType;
+      config?: Expand<configType>;
+    },
+    listeners: (res: any) => void
+  ) {
+    return CRUD.POSTSTREAMTEXT.call(this, info, listeners);
   }
   /** 用于表单创建上传资源
    *

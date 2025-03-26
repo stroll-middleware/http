@@ -18,9 +18,9 @@ export function GET(
   if(body){
     throw new Error('GET请求不允许有body参数')
   }
-  url = params ? spliceUrl(url, params) : url;
+  config.url = params ? spliceUrl(url, params) : url;
   config.method = "GET"
-  return this.request(url, config)
+  return this.request(config)
 }
 
 export default GET;
