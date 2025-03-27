@@ -1,5 +1,5 @@
 import CRUD from "./CRUD";
-import { aDL, fileProgress, formData, toData, toParams } from "./data";
+import { aDL, fileProgress, formData, isJSON, toData, toParams } from "./data";
 import { REQUEST, CANCEL } from "./request";
 import {
   Expand,
@@ -109,6 +109,35 @@ export class http {
     return this.create(config);
   }
 
+  async getData (response: any) {
+    try {
+      let data = await response.text()
+      if(data){
+        if (isJSON(data)) {
+          data = JSON.parse(data);
+        }
+      }
+      response.data = data;
+      return response;
+    } catch (error) {
+      return response;
+    }
+  }
+  static async getData (response: any) {
+    try {
+      let data = await response.text()
+      if(data){
+        if (isJSON(data)) {
+          data = JSON.parse(data);
+        }
+      }
+      response.data = data;
+      return response;
+    } catch (error) {
+      return response;
+    }
+  }
+
   /** 创建一个请求实例
    * @description: http请求类
    * @param {string} baseURL 基础URL
@@ -145,14 +174,11 @@ export class http {
   }
 
   initConfig(config: configType = {}) {
-    const headers: any = Object.assign(
-      this.config.headers || {},
-      config.headers || {}
-    );
-    config = Object.assign(this.config, config);
-    if (Object.keys(headers).length) {
-      config.headers = headers;
-    }
+    const headers: any = {
+      ...JSON.parse(JSON.stringify(this.config.headers || {})),
+      ...JSON.parse(JSON.stringify(config.headers || {})),
+    };
+    config = { ...this.config, ...config, headers };
     return config;
   }
   static initConfig(config: configType = {}) {
@@ -250,9 +276,7 @@ export class http {
    * @param init 请求配置
    * @returns Promise
    */
-  request(
-    config: Expand<configType> = {}
-  ) {
+  request(config: Expand<configType> = {}) {
     return REQUEST.call(this, config);
   }
   /** 请求
@@ -260,9 +284,7 @@ export class http {
    * @param init 请求配置
    * @returns Promise
    */
-  static request(
-    config: Expand<configType> = {}
-  ) {
+  static request(config: Expand<configType> = {}) {
     return REQUEST.call(this, config);
   }
 
@@ -275,13 +297,14 @@ export class http {
    * - param.config 配置项
    * @returns Promise<any>
    */
-  get(info: {
+  async get(info: {
     url: string;
     params?: Expand<dataType>;
     body?: Expand<bodyType> | jsonArrType | jsonObjType;
     config?: Expand<configType>;
   }) {
-    return CRUD.GET.call(this, info);
+    const response = await CRUD.GET.call(this, info);
+    return this.getData(response);
   }
   /** 用于获取资源
    *
@@ -292,13 +315,14 @@ export class http {
    * - param.config - 配置项
    * @returns Promise<any>
    */
-  static get(info: {
+  static async get(info: {
     url: string;
     params?: Expand<dataType>;
     body?: Expand<bodyType> | jsonArrType | jsonObjType;
     config?: Expand<configType>;
   }) {
-    return CRUD.GET.call(this, info);
+    const response = await CRUD.GET.call(this, info);
+    return this.getData(response);
   }
   /** 下载文件,想获取进度,需要后端返回文件流（fs.createReadStream(filePath)）
    *
@@ -327,27 +351,6 @@ export class http {
   ) {
     return CRUD.GETDL.call(this, info, onProgress);
   }
-  /** 需要后端返回数据流
-   * 
-   * @param info - {url, params, body, config}
-   * - param.url - 请求地址
-   * - param.params - url 请求参数
-   * - param.body - body 请求参数
-   * - param.config - 配置项
-   * @param listeners 回调函数
-   * @returns
-   */
-  getStreamText(
-    info: {
-      url: string;
-      params?: Expand<dataType>;
-      body?: Expand<bodyType> | jsonArrType | jsonObjType;
-      config?: Expand<configType>;
-    },
-    listeners: (res: any) => void
-  ) {
-    return CRUD.GETSTREAMTEXT.call(this, info, listeners);
-  }
   /** 下载文件,想获取进度,需要后端返回文件流（fs.createReadStream(filePath)）
    *
    * - headers["content-length"] 里返回文件大小
@@ -374,6 +377,178 @@ export class http {
   ) {
     return CRUD.GETDL.call(this, info, onProgress);
   }
+  /** 需要后端返回数据流
+   *
+   * @param info - {url, params, body, config}
+   * - param.url - 请求地址
+   * - param.params - url 请求参数
+   * - param.body - body 请求参数
+   * - param.config - 配置项
+   * @param listeners 回调函数返回阶段数据
+   * 示例
+   * ```js
+   * import Koa from "koa";
+   * import Router from "koa-router";
+   * import {PassThrough} from "stream";
+   * import cors from "koa2-cors";
+   * 
+   * const app = new Koa();
+   * const router = new Router();
+   * app.use(cors());
+   * // 使用路由器中间件
+   * app.use(router.routes()).use(router.allowedMethods());
+   * 
+   * // 修改路由：发送流式数据
+   * router.get("/stream", async (ctx) => {
+   *   // 设置流式响应头
+   *  ctx.set({
+   *    "Content-Type": "text/event-stream",
+   *    "Cache-Control": "no-cache",
+   *    "Connection": "keep-alive",
+   *  });
+   * 
+   *  // 模拟的对话数据
+   *  const responseText = [
+   *    "你好！我是 DeepSeek 的智能助手。\n",
+   *    "我正在分析您的问题...\n",
+   *    "根据现有数据，建议如下：\n",
+   *    "1. 首先检查网络连接\n",
+   *    "2. 验证 API 密钥有效性\n",
+   *    "3. 查看服务状态面板\n",
+   *    "\n需要更详细的帮助吗？"
+   *  ];
+   *  const stream = new PassThrough();
+   *  ctx.status = 200;
+   * 
+   *  for (let i = 0; i < responseText.length; i++) {
+   *    const content = responseText[i]
+   *    setTimeout(() => {
+   *      stream.write(
+   *        `${JSON.stringify({
+   *          id: i + 1,
+   *          content,
+   *          length: responseText.length
+   *        })}\n`
+   *      );
+   *      if (i === responseText.length - 1) {
+   *        stream.end();
+   *      }
+   *    }, i * 1000);
+   *  }
+   *  ctx.body = stream;
+   *  
+   *  // 处理客户端断开连接
+   *  ctx.req.on("close", () => {
+   *  console.log("客户端断开连接");
+   *  ctx.res.end();
+   *  });
+   *});
+   *
+   *const hostname = "127.0.0.1";
+   *const port = 6060;
+   *app.listen(port, hostname, () => {
+   *  console.log(`Server running at http://${hostname}:${port}/`);
+   *});
+   * ```
+   * @returns Promise<any>
+   */
+  getStreamText(
+    info: {
+      url: string;
+      params?: Expand<dataType>;
+      body?: Expand<bodyType> | jsonArrType | jsonObjType;
+      config?: Expand<configType>;
+    },
+    listeners: (res: any) => void
+  ) {
+    return CRUD.GETSTREAMTEXT.call(this, info, listeners);
+  }
+  /** 需要后端返回数据流
+   *
+   * @param info - {url, params, body, config}
+   * - param.url - 请求地址
+   * - param.params - url 请求参数
+   * - param.body - body 请求参数
+   * - param.config - 配置项
+   * @param listeners 回调函数返回阶段数据
+   * 示例
+   * ```js
+   * import Koa from "koa";
+   * import Router from "koa-router";
+   * import {PassThrough} from "stream";
+   * import cors from "koa2-cors";
+   * 
+   * const app = new Koa();
+   * const router = new Router();
+   * app.use(cors());
+   * // 使用路由器中间件
+   * app.use(router.routes()).use(router.allowedMethods());
+   * 
+   * // 修改路由：发送流式数据
+   * router.get("/stream", async (ctx) => {
+   *   // 设置流式响应头
+   *  ctx.set({
+   *    "Content-Type": "text/event-stream",
+   *    "Cache-Control": "no-cache",
+   *    "Connection": "keep-alive",
+   *  });
+   * 
+   *  // 模拟的对话数据
+   *  const responseText = [
+   *    "你好！我是 DeepSeek 的智能助手。\n",
+   *    "我正在分析您的问题...\n",
+   *    "根据现有数据，建议如下：\n",
+   *    "1. 首先检查网络连接\n",
+   *    "2. 验证 API 密钥有效性\n",
+   *    "3. 查看服务状态面板\n",
+   *    "\n需要更详细的帮助吗？"
+   *  ];
+   *  const stream = new PassThrough();
+   *  ctx.status = 200;
+   * 
+   *  for (let i = 0; i < responseText.length; i++) {
+   *    const content = responseText[i]
+   *    setTimeout(() => {
+   *      stream.write(
+   *        `${JSON.stringify({
+   *          id: i + 1,
+   *          content,
+   *          length: responseText.length
+   *        })}\n`
+   *      );
+   *      if (i === responseText.length - 1) {
+   *        stream.end();
+   *      }
+   *    }, i * 1000);
+   *  }
+   *  ctx.body = stream;
+   *  
+   *  // 处理客户端断开连接
+   *  ctx.req.on("close", () => {
+   *  console.log("客户端断开连接");
+   *  ctx.res.end();
+   *  });
+   *});
+   *
+   *const hostname = "127.0.0.1";
+   *const port = 6060;
+   *app.listen(port, hostname, () => {
+   *  console.log(`Server running at http://${hostname}:${port}/`);
+   *});
+   * ```
+   * @returns Promise<any>
+   */
+  static getStreamText(
+    info: {
+      url: string;
+      params?: Expand<dataType>;
+      body?: Expand<bodyType> | jsonArrType | jsonObjType;
+      config?: Expand<configType>;
+    },
+    listeners: (res: any) => void
+  ) {
+    return CRUD.GETSTREAMTEXT.call(this, info, listeners);
+  }
 
   /** 用于部分更新
    *
@@ -384,13 +559,14 @@ export class http {
    * - params.config 配置项
    * @returns Promise<any>
    */
-  patch(info: {
+  async patch(info: {
     url: string;
     params?: Expand<dataType>;
     body?: Expand<bodyType> | jsonArrType | jsonObjType;
     config?: Expand<configType>;
   }) {
-    return CRUD.PATCH.call(this, info);
+    const response = await CRUD.PATCH.call(this, info);
+    return this.getData(response);
   }
   /** 用于部分更新
    *
@@ -401,13 +577,14 @@ export class http {
    * - param.config 配置项
    * @returns Promise<any>
    */
-  static patch(info: {
+  static async patch(info: {
     url: string;
     params?: Expand<dataType>;
     body?: Expand<bodyType> | jsonArrType | jsonObjType;
     config?: Expand<configType>;
   }) {
-    return CRUD.PATCH.call(this, info);
+    const response = await CRUD.PATCH.call(this, info);
+    return this.getData(response);
   }
   /** 用于表单部分更新
    *
@@ -417,12 +594,13 @@ export class http {
    * - param.config - 配置项
    * @returns Promise<any>
    */
-  patchForm(info: {
+  async patchForm(info: {
     url: string;
     body: DelType<bodyType, "string" | "null">;
     config?: Expand<configType>;
   }) {
-    return CRUD.PATCHFORM.call(this, info);
+    const response = await CRUD.PATCHFORM.call(this, info);
+    return this.getData(response);
   }
   /** 用于表单部分更新
    *
@@ -432,12 +610,13 @@ export class http {
    * - param.config - 配置项
    * @returns Promise<any>
    */
-  static patchForm(info: {
+  static async patchForm(info: {
     url: string;
     body: DelType<bodyType, "string" | "null">;
     config?: Expand<configType>;
   }) {
-    return CRUD.PATCHFORM.call(this, info);
+    const response = await CRUD.PATCHFORM.call(this, info);
+    return this.getData(response);
   }
   /** 用于表单部分更新、上传
    *
@@ -448,7 +627,7 @@ export class http {
    * @param  onProgress 进度回调
    * @returns Promise<any>
    */
-  patchFileForm(
+  async patchFileForm(
     info: {
       url: string;
       body: DelType<bodyType, "string" | "null">;
@@ -456,7 +635,8 @@ export class http {
     },
     onProgress?: (progress: { [s: string]: number }) => void
   ) {
-    return CRUD.PATCHFILEFORM.call(this, info, onProgress);
+    const response = await CRUD.PATCHFILEFORM.call(this, info, onProgress);
+    return this.getData(response);
   }
   /** 用于表单部分更新、上传
    *
@@ -467,7 +647,7 @@ export class http {
    * @param onProgress - 进度条回调
    * @returns Promise<any>
    */
-  static patchFileForm(
+  static async patchFileForm(
     info: {
       url: string;
       body: DelType<bodyType, "string" | "null">;
@@ -475,7 +655,8 @@ export class http {
     },
     onProgress?: (progress: { [s: string]: number }) => void
   ) {
-    return CRUD.PATCHFILEFORM.call(this, info, onProgress);
+    const response = await CRUD.PATCHFILEFORM.call(this, info, onProgress);
+    return this.getData(response);
   }
 
   /** 用于创建资源
@@ -487,13 +668,14 @@ export class http {
    * - param.config - config 配置项
    * @returns Promise<any>
    */
-  post(info: {
+  async post(info: {
     url: string;
     params?: Expand<dataType>;
     body?: Expand<bodyType> | jsonArrType | jsonObjType;
     config?: Expand<configType>;
   }) {
-    return CRUD.POST.call(this, info);
+    const response = await CRUD.POST.call(this, info);
+    return this.getData(response);
   }
   /** 用于创建资源
    *
@@ -504,13 +686,14 @@ export class http {
    * - param.config - config 配置项
    * @returns Promise<any>
    */
-  static post(info: {
+  static async post(info: {
     url: string;
     params?: Expand<dataType>;
     body?: Expand<bodyType> | jsonArrType | jsonObjType;
     config?: Expand<configType>;
   }) {
-    return CRUD.POST.call(this, info);
+    const response = await CRUD.POST.call(this, info);
+    return this.getData(response);
   }
   /** 用于表单创建资源
    *
@@ -520,12 +703,13 @@ export class http {
    * - param.config - config 配置项
    * @returns Promise<any>
    */
-  postForm(info: {
+  async postForm(info: {
     url: string;
     body: DelType<bodyType, "string" | "null">;
     config?: Expand<configType>;
   }) {
-    return CRUD.POSTFORM.call(this, info);
+    const response = await CRUD.POSTFORM.call(this, info);
+    return this.getData(response);
   }
   /** 用于表单创建资源
    *
@@ -535,12 +719,13 @@ export class http {
    * - params.config - 配置项
    * @returns Promise<any>
    */
-  static postForm(info: {
+  static async postForm(info: {
     url: string;
     body: DelType<bodyType, "string" | "null">;
     config?: Expand<configType>;
   }) {
-    return CRUD.POSTFORM.call(this, info);
+    const response = await CRUD.POSTFORM.call(this, info);
+    return this.getData(response);
   }
   /** 用于表单创建上传资源
    *
@@ -551,7 +736,7 @@ export class http {
    * @param  onProgress 进度回调
    * @returns Promise<any>
    */
-  postFileForm(
+  async postFileForm(
     info: {
       url: string;
       body: DelType<bodyType, "string" | "null">;
@@ -559,18 +744,8 @@ export class http {
     },
     onProgress?: (progress: { [s: string]: number }) => void
   ) {
-    return CRUD.POSTFILEFORM.call(this, info, onProgress);
-  }
-  postStreamText(
-    info: {
-      url: string;
-      params?: Expand<dataType>;
-      body?: Expand<bodyType> | jsonArrType | jsonObjType;
-      config?: Expand<configType>;
-    },
-    listeners: (res: any) => void
-  ) {
-    return CRUD.POSTSTREAMTEXT.call(this, info, listeners);
+    const response = await CRUD.POSTFILEFORM.call(this, info, onProgress);
+    return this.getData(response);
   }
   /** 用于表单创建上传资源
    *
@@ -581,7 +756,7 @@ export class http {
    * @param  onProgress 进度回调
    * @returns Promise<any>
    */
-  static postFileForm(
+  static async postFileForm(
     info: {
       url: string;
       body: DelType<bodyType, "string" | "null">;
@@ -589,7 +764,8 @@ export class http {
     },
     onProgress?: (progress: { [s: string]: number }) => void
   ) {
-    return CRUD.POSTFILEFORM.call(this, info, onProgress);
+    const response = await CRUD.POSTFILEFORM.call(this, info, onProgress);
+    return this.getData(response);
   }
   /** 下载文件,想获取进度,需要后端返回文件流（fs.createReadStream(filePath)）
    *
@@ -671,13 +847,14 @@ export class http {
    * - param.config - 配置项
    * @returns Promise<any>
    */
-  static put(info: {
+  static async put(info: {
     url: string;
     params?: Expand<dataType>;
     body?: Expand<bodyType> | jsonArrType | jsonObjType;
     config?: Expand<configType>;
   }) {
-    return CRUD.PUT.call(this, info);
+    const response = await CRUD.PUT.call(this, info);
+    return this.getData(response);
   }
   /** 用于表单更新资源
    *
@@ -687,12 +864,13 @@ export class http {
    * @param config 配置项
    * @returns Promise<any>
    */
-  putForm(info: {
+  async putForm(info: {
     url: string;
     body: DelType<bodyType, "string" | "null">;
     config?: Expand<configType>;
   }) {
-    return CRUD.PUTFORM.call(this, info);
+    const response = await CRUD.PUTFORM.call(this, info);
+    return this.getData(response);
   }
   /** 用于表单更新资源
    *
@@ -702,12 +880,13 @@ export class http {
    * - param.config - 配置项
    * @returns Promise<any>
    */
-  static putForm(info: {
+  static async putForm(info: {
     url: string;
     body: DelType<bodyType, "string" | "null">;
     config?: Expand<configType>;
   }) {
-    return CRUD.PUTFORM.call(this, info);
+    const response = await CRUD.PUTFORM.call(this, info);
+    return this.getData(response);
   }
   /** 用于表单更新资源/文件
    *
@@ -718,7 +897,7 @@ export class http {
    * @param  onProgress 进度回调
    * @returns Promise<any>
    */
-  putFileForm(
+  async putFileForm(
     info: {
       url: string;
       body: DelType<bodyType, "string" | "null">;
@@ -726,7 +905,8 @@ export class http {
     },
     onProgress?: (progress: { [s: string]: number }) => void
   ) {
-    return CRUD.PUTFILEFORM.call(this, info, onProgress);
+    const response = await CRUD.PUTFILEFORM.call(this, info, onProgress);
+    return this.getData(response);
   }
   /** 用于表单更新资源/文件
    *
@@ -737,7 +917,7 @@ export class http {
    * @param onProgress 进度回调
    * @returns Promise<any>
    */
-  static putFileForm(
+  static async putFileForm(
     info: {
       url: string;
       body: DelType<bodyType, "string" | "null">;
@@ -745,7 +925,8 @@ export class http {
     },
     onProgress?: (progress: { [s: string]: number }) => void
   ) {
-    return CRUD.PUTFILEFORM.call(this, info, onProgress);
+    const response = await CRUD.PUTFILEFORM.call(this, info, onProgress);
+    return this.getData(response);
   }
   /** 用于 SSE 服务器向客户端单项推送长连接
    * - 需要 返回 流数据
@@ -865,13 +1046,14 @@ export class http {
    * - param.config 配置项
    * @returns Promise<any>
    */
-  delete(info: {
+  async delete(info: {
     url: string;
     params?: Expand<dataType>;
     body?: Expand<bodyType> | jsonArrType | jsonObjType;
     config?: Expand<configType>;
   }) {
-    return CRUD.DELETE.call(this, info);
+    const response = await CRUD.DELETE.call(this, info);
+    return this.getData(response);
   }
   /** 用于删除资源
    *
@@ -882,13 +1064,14 @@ export class http {
    * - param.config - 配置项
    * @returns Promise<any>
    */
-  static delete(info: {
+  static async delete(info: {
     url: string;
     params?: Expand<dataType>;
     body?: Expand<bodyType> | jsonArrType | jsonObjType;
     config?: Expand<configType>;
   }) {
-    return CRUD.DELETE.call(this, info);
+    const response = await CRUD.DELETE.call(this, info);
+    return this.getData(response);
   }
 
   /** 不返回message body内容，仅仅是获得获取资源的部分信息
@@ -899,12 +1082,13 @@ export class http {
    * - param.config - 配置项
    * @returns
    */
-  head(info: {
+  async head(info: {
     url: string;
     params?: Expand<dataType>;
     config?: Expand<configType>;
   }) {
-    return CRUD.HEAD.call(this, info);
+    const response = await CRUD.HEAD.call(this, info);
+    return this.getData(response);
   }
   /** 不返回message body内容，仅仅是获得获取资源的部分信息
    *
@@ -914,12 +1098,13 @@ export class http {
    * - param.config 配置项
    * @returns
    */
-  static head(info: {
+  static async head(info: {
     url: string;
     params?: Expand<dataType>;
     config?: Expand<configType>;
   }) {
-    return CRUD.HEAD.call(this, info);
+    const response = await CRUD.HEAD.call(this, info);
+    return this.getData(response);
   }
 
   /** 用于url验证，验证接口服务是否正常
@@ -931,13 +1116,14 @@ export class http {
    * - param.config - 配置项
    * @returns Promise<any>
    */
-  options(info: {
+  async options(info: {
     url: string;
     params?: Expand<dataType>;
     body?: Expand<bodyType> | jsonArrType | jsonObjType;
     config?: Expand<configType>;
   }) {
-    return CRUD.OPTIONS.call(this, info);
+    const response = await CRUD.OPTIONS.call(this, info);
+    return this.getData(response);
   }
   /** 用于url验证，验证接口服务是否正常
    *
@@ -948,13 +1134,14 @@ export class http {
    * - param.config 配置项
    * @returns Promise<any>
    */
-  static options(info: {
+  static async options(info: {
     url: string;
     params?: Expand<dataType>;
     body?: Expand<bodyType> | jsonArrType | jsonObjType;
     config?: Expand<configType>;
   }) {
-    return CRUD.OPTIONS.call(this, info);
+    const response = await CRUD.OPTIONS.call(this, info);
+    return this.getData(response);
   }
 
   /** 回显服务器收到的请求
@@ -966,13 +1153,14 @@ export class http {
    * - param.config 配置项
    * @returns Promise<any>
    */
-  trace(info: {
+  async trace(info: {
     url: string;
     params?: Expand<dataType>;
     body?: Expand<bodyType> | jsonArrType | jsonObjType;
     config?: Expand<configType>;
   }) {
-    return CRUD.TRACE.call(this, info);
+    const response = await CRUD.TRACE.call(this, info);
+    return this.getData(response);
   }
   /** 回显服务器收到的请求
    *
@@ -983,13 +1171,14 @@ export class http {
    * - param.config 配置项
    * @returns Promise<any>
    */
-  static trace(info: {
+  static async trace(info: {
     url: string;
     params?: Expand<dataType>;
     body?: Expand<bodyType> | jsonArrType | jsonObjType;
     config?: Expand<configType>;
   }) {
-    return CRUD.TRACE.call(this, info);
+    const response = await CRUD.TRACE.call(this, info);
+    return this.getData(response);
   }
 
   toData(params: string) {

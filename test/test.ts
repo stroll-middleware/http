@@ -1,24 +1,13 @@
 import Koa from "koa";
 import Router from "koa-router";
-import fs from "fs";
-import path from "path";
 import {PassThrough} from "stream";
 import cors from "koa2-cors";
-import { blob, buffer } from "stream/consumers";
 
 const app = new Koa();
 const router = new Router();
 app.use(cors());
 // 使用路由器中间件
 app.use(router.routes()).use(router.allowedMethods());
-
-router.get("/test", async (ctx) => {
-  const { query } = ctx;
-  let { text } = query;
-  text = text ?? decodeURI(ctx.querystring);
-  ctx.status = 200;
-  ctx.body = { data: 'text' };
-});
 
 // 修改路由：发送流式数据
 router.get("/stream", async (ctx) => {

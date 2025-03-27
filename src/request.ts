@@ -1,4 +1,5 @@
 import { configType, Expand } from "./types";
+import { isJSON } from "./data";
 
 // 提取公共逻辑：生成请求唯一标识
 function generateReqKey(input: any, config: any): string {
@@ -40,8 +41,7 @@ export async function REQUEST(
   } else {
     this.requestList[reqKey] = true;
   }
-  config.signal = controller.signal;
-
+  config.signal = config.signal || controller.signal;
   // 超时处理
   let timeout: any;
   if (config.timeout) {
@@ -68,14 +68,6 @@ export async function REQUEST(
 
   return new Promise((resolve, reject) => {
     fetch(config.url, config as any).then(async (response: any) => {
-      listeners && await listeners(response)
-      let data = await response.text()
-      if(data){
-        if (isJSON(data)) {
-          data = JSON.parse(data);
-        }
-      }
-      response.data = data
       if (this.config.responseInterceptors) {
         response = this.config.responseInterceptors(response) || response;
       }
@@ -83,6 +75,7 @@ export async function REQUEST(
         response = this.responseInterceptors(response) || response;
       }
       if (response.status >= 200 && response.status < 300) {
+        listeners && listeners(response)
         resolve(response);
       } else {
         this.config.onError && this.config.onError(response);
@@ -125,13 +118,4 @@ export async function CANCEL(this: any, mark: string|string[]): Promise<boolean>
   return successCount > 0; // 返回是否成功取消了任何请求
 }
 
-function isJSON(str: string) {
-  try {
-    JSON.parse(str);
-  } catch (e) {
-    // 转换出错，抛出异常
-    return false;
-  }
-  return true;
-}
 export default REQUEST;

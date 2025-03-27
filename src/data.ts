@@ -383,6 +383,16 @@ export function formData<T extends Record<string, any>>(data: T): FormData {
   return formData;
 }
 
+export function isJSON(str: string) {
+  try {
+    JSON.parse(str);
+  } catch (e) {
+    // 转换出错，抛出异常
+    return false;
+  }
+  return true;
+}
+
 export default {
   spliceUrl,
   formatValueForFormData,
@@ -391,5 +401,6 @@ export default {
   formData,
   progress,
   aDL,
+  isJSON,
   fileProgress,
 };

@@ -1,0 +1,136 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>流式对话演示</title>
+    <style>
+        #output {
+            border: 1px solid #ccc;
+            padding: 20px;
+            margin: 20px;
+            min-height: 200px;
+            font-family: monospace;
+            white-space: pre-wrap;
+        }
+        .loading {
+            display: none;
+            color: #666;
+        }
+    </style>
+</head>
+<body>
+    <button onclick="startStream()">开始对话</button>
+    <div id="output"></div>
+    <div id="loading" class="loading">思考中...</div>
+
+    <script>
+        // 流式对话核心逻辑
+        class StreamDialog {
+            constructor() {
+                this.output = document.getElementById('output');
+                this.loading = document.getElementById('loading');
+                this.controller = null;  // 用于中止请求
+            }
+
+            // 开始流式对话
+            async start() {
+                try {
+                    this.showLoading();
+                    this.output.textContent = '';
+                    
+                    // 创建中止控制器
+                    this.controller = new AbortController();
+                    
+                    // 发起 fetch 请求
+                    const response = await fetch('http://localhost:6060/stream', {
+                        signal: this.controller.signal,
+                        headers: {
+                            // 'Content-Type': 'application/json'
+                        }
+                    });
+
+                    if (!response.ok) throw new Error(response.statusText);
+                    if (!response.body) throw new Error("ReadableStream not supported");
+
+                    // 创建读取器
+                    const reader = response.body.getReader();
+                    const decoder = new TextDecoder();
+                    
+                    // 持续读取流数据
+                    while (true) {
+                        const { done, value } = await reader.read();
+                        if (done) break;
+                        
+                        // 解析数据块
+                        const chunk = decoder.decode(value);
+                        const lines = chunk.split('\n').filter(line => line.trim());
+                        
+                        for (const line of lines) {
+                            try {
+                                const event = JSON.parse(line.replace('data: ', ''));
+                                console.log(event)
+                                if (event.id === event.length) {
+                                    this.controller.abort();
+                                }
+                                this.appendContent(event.content);
+                            } catch (e) {
+                                console.error('解析错误:', e);
+                            }
+                        }
+                    }
+                } catch (error) {
+                    if (error.name !== 'AbortError') {
+                        this.appendContent('\n[对话异常终止]');
+                    }
+                } finally {
+                    this.hideLoading();
+                    // this.controller = null;
+                }
+            }
+
+            // 中止对话
+            abort() {
+                if (this.controller) {
+                    this.controller.abort();
+                }
+            }
+
+            // 添加内容到输出区
+            appendContent(text) {
+                // 模拟打字机效果
+                let currentIndex = 0;
+                const animate = () => {
+                    if (currentIndex < text.length) {
+                        this.output.textContent += text[currentIndex];
+                        currentIndex++;
+                        requestAnimationFrame(animate);
+                        this.output.scrollTop = this.output.scrollHeight; // 自动滚动
+                    }
+                };
+                animate();
+            }
+
+            showLoading() {
+                this.loading.style.display = 'block';
+            }
+
+            hideLoading() {
+                this.loading.style.display = 'none';
+            }
+        }
+
+        // 初始化对话实例
+        const dialog = new StreamDialog();
+
+        // 启动对话
+        function startStream() {
+            dialog.start();
+        }
+
+        // 中止对话
+        function stopStream() {
+            dialog.abort();
+        }
+    </script>
+</body>
+</html>
