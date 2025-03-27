@@ -94,6 +94,15 @@ HTTP.get({
   console.log('res', res.data)
 })
 
+//  流式返回文本防deepseek
+http.getStreamText({
+  url:'/stream'
+}, (res: any)=> {
+  console.log('res', res)
+}).then((res: any)=> {
+  console.log('res----------', res)
+});
+
 //  下载文件
 HTTP.getDL({
   url:'/test',
