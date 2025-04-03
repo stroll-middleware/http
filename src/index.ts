@@ -884,7 +884,7 @@ export class http {
    * // 文件上传接口
    * router.post('/upload', async (ctx: any) => {
    *   try {
-   *     const { chunkIndex, totalChunks, fileName, md5 } = ctx.request.body;
+   *     const { chunkIndex, totalChunks, fileName, md5, md5All } = ctx.request.body;
    *     if (!chunkIndex || !totalChunks || !fileName || !md5) {
    *       ctx.status = 400;
    *       ctx.body = { error: 'Missing required fields' };
@@ -1024,7 +1024,7 @@ export class http {
    * // 文件上传接口
    * router.post('/upload', async (ctx: any) => {
    *   try {
-   *     const { chunkIndex, totalChunks, fileName, md5 } = ctx.request.body;
+   *     const { chunkIndex, totalChunks, fileName, md5, md5All } = ctx.request.body;
    *     if (!chunkIndex || !totalChunks || !fileName || !md5) {
    *       ctx.status = 400;
    *       ctx.body = { error: 'Missing required fields' };
