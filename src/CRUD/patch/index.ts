@@ -27,7 +27,7 @@ export function PATCH (
   config.body = body && typeof body !== 'string' ? JSON.stringify(body) : body;
   config.method = 'PATCH'
   
-  return this.request(config)
+  return this.request(config, true)
 }
 
 export default PATCH;

@@ -36,7 +36,7 @@ export function PUTFILEFORM(
     
     fileProgress(fileArr, onProgress);
   }
-  return this.request(config);
+  return this.request(config, true);
 }
 
 export default PUTFILEFORM;

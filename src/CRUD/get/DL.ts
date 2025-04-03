@@ -7,23 +7,6 @@ function buildRequestUrl(url: string, params?: Expand<dataType>): string {
   return params ? spliceUrl(url, params) : url;
 }
 
-// 封装进度处理逻辑
-function handleResponseWithProgress(
-  response: Response,
-  onProgress?: (progress: number) => void
-): Response {
-  // 检查 Response.body 是否为 null
-  if (!response.body) {
-    throw new Error("Response body is null, cannot process progress.");
-  }
-
-  // 调整 progress 函数的调用，确保类型安全
-  const fileData = progress(response, onProgress);
-
-  // 扩展响应对象，添加 fileData 属性
-  return Object.assign(response, { fileData });
-}
-
 export async function GETDL(
   this: any,
   {
@@ -49,11 +32,12 @@ export async function GETDL(
   config.method = "GET";
 
   // 发起请求并处理响应
-  return this.request(config).then((response: Response) => {
+  return this.request(config).then((response: Response&{fileData: any}) => {
     try {
-      return handleResponseWithProgress(response, onProgress);
+      response.fileData = progress(response, onProgress)
+      return response;
     } catch (error) {
-      console.error("Error handling response with progress:", error);
+      console.error("错误处理响应随进度的响应:", error);
       throw error; // 重新抛出错误以便调用方处理
     }
   });

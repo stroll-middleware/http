@@ -27,7 +27,7 @@ export function POST (
   config.body = body && typeof body !== 'string' ? JSON.stringify(body) : body;
   config.method = "POST"
   
-  return this.request(config)
+  return this.request(config, true)
 }
 
 export default POST;

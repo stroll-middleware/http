@@ -29,11 +29,7 @@ export async function POSTDL (
   config.body = body && typeof body !== 'string' ? JSON.stringify(body) : body;
   config.method = "POST";
   return this.request(config).then(
-    (response: {
-      headers: { get: (arg0: string) => any };
-      body: { getReader: () => any };
-      fileData: any
-    }) => {
+    (response: Response&{fileData: any}) => {
       response.fileData = progress(response, onProgress)
       return response;
     }

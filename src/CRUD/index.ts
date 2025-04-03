@@ -8,6 +8,7 @@ export * from './post';
 export * from './post/DL';
 export * from './post/fileForm';
 export * from './post/form';
+export * from './post/sliceFile';
 export * from './put';
 export * from './put/fileForm';
 export * from './put/form';
@@ -27,6 +28,7 @@ import POST from './post';
 import POSTDL from './post/DL';
 import POSTFILEFORM from './post/fileForm';
 import POSTFORM from './post/form';
+import POSTSLICEFILE from './post/sliceFile';
 import PUT from './put';
 import PUTFILEFORM from './put/fileForm';
 import PUTFORM from './put/form';
@@ -47,6 +49,7 @@ export default {
   POSTDL,
   POSTFILEFORM,
   POSTFORM,
+  POSTSLICEFILE,
   PUT,
   PUTFILEFORM,
   PUTFORM,

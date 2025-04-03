@@ -21,7 +21,7 @@ export function HEAD (
   config.url = params ? spliceUrl(url, params) : url;
   config.method = 'HEAD'
   
-  return this.request(config)
+  return this.request(config, true)
 }
 
 export default HEAD;

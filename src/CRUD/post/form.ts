@@ -26,7 +26,7 @@ export function POSTFORM (
   config.body = formData(body);
   config.method = "POST"
   
-  return this.request(config)
+  return this.request(config, true)
 }
 
 export default POSTFORM;

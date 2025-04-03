@@ -35,7 +35,7 @@ export async function PATCHFILEFORM(
 
     fileProgress(fileArr, onProgress);
   }
-  return this.request(config);
+  return this.request(config, true);
 }
 
 export default PATCHFILEFORM;

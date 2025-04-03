@@ -27,22 +27,22 @@ export async function POSTFILEFORM (
   config.method = "POST";
   config.body = formData(body);
   if (onProgress) {
-      const fileArr: File[] = []
-      Object.values(body).forEach((val) => {
-        if (Array.isArray(val)) {
-          val.forEach((item) => {
-            if (item instanceof File) {
-              fileArr.push(item);
-            }
-          })
-        } else if (val instanceof File) {
-          fileArr.push(val);
-        }
-      })
-      
-      fileProgress(fileArr, onProgress);
-    }
-    return this.request(config);
+    const fileArr: File[] = []
+    Object.values(body).forEach((val) => {
+      if (Array.isArray(val)) {
+        val.forEach((item) => {
+          if (item instanceof File) {
+            fileArr.push(item);
+          }
+        })
+      } else if (val instanceof File) {
+        fileArr.push(val);
+      }
+    })
+    
+    fileProgress(fileArr, onProgress);
+  }
+  return this.request(config, true);
 }
 
 export default POSTFILEFORM;

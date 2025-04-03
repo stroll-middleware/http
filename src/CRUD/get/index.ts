@@ -20,7 +20,7 @@ export function GET(
   }
   config.url = params ? spliceUrl(url, params) : url;
   config.method = "GET"
-  return this.request(config)
+  return this.request(config, true)
 }
 
 export default GET;

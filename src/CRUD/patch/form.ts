@@ -25,7 +25,7 @@ export function PATCHFORM (
   config.url = params ? spliceUrl(url, params) : url;
   config.body = formData(body);
   config.method = 'PATCH'
-  return this.request(config)
+  return this.request(config, true)
 }
 
 export default PATCHFORM;

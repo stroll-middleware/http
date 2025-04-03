@@ -18,7 +18,7 @@ function clearCancelMark(this: any, reqKey: string, signal?: string) {
 export async function REQUEST(
   this: any,
   init: Expand<configType> = {},
-  listeners?: Function
+  analysis?: true
 ) {
   // 初始化控制器和配置
   const controller = new AbortController();
@@ -75,7 +75,14 @@ export async function REQUEST(
         response = this.responseInterceptors(response) || response;
       }
       if (response.status >= 200 && response.status < 300) {
-        listeners && listeners(response)
+        if (analysis) {
+          response.data = await response.text()
+          if(response.data){
+            if (isJSON(response.data)) {
+              response.data = JSON.parse(response.data);
+            }
+          }
+        }
         resolve(response);
       } else {
         this.config.onError && this.config.onError(response);

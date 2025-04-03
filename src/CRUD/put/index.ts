@@ -27,7 +27,7 @@ export function PUT (
   config.body = body && typeof body !== 'string' ? JSON.stringify(body) : body;
   config.method = "PUT"
   
-  return this.request(config)
+  return this.request(config, true)
 }
 
 export default PUT;

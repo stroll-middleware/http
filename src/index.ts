@@ -276,8 +276,8 @@ export class http {
    * @param init 请求配置
    * @returns Promise
    */
-  request(config: Expand<configType> = {}) {
-    return REQUEST.call(this, config);
+  request(config: Expand<configType> = {}, analysis?: true) {
+    return REQUEST.call(this, config, analysis);
   }
   /** 请求
    *
@@ -385,7 +385,7 @@ export class http {
    * - param.body - body 请求参数
    * - param.config - 配置项
    * @param listeners 回调函数返回阶段数据
-   * 示例
+   * nodejs 示例
    * ```js
    * import Koa from "koa";
    * import Router from "koa-router";
@@ -471,7 +471,7 @@ export class http {
    * - param.body - body 请求参数
    * - param.config - 配置项
    * @param listeners 回调函数返回阶段数据
-   * 示例
+   * nodejs 示例
    * ```js
    * import Koa from "koa";
    * import Router from "koa-router";
@@ -821,6 +821,288 @@ export class http {
     return CRUD.POSTDL.call(this, info, onProgress);
   }
 
+  /** 文件分块上传
+   * 
+   * @param info 包含文件切片所需信息的对象
+   * @param info.url 文件上传的URL地址
+   * @param info.params 可选的扩展数据类型参数，用于自定义上传的其他信息
+   * @param info.body 包含文件及切片相关参数的对象
+   * @param info.body.file 要上传的文件对象
+   * @param info.body.chunkSize 可选的 每个文件块的大小，默认一片为（1024 * 1024 * 2）
+   * @param info.body.passedBlocks 可选的 已上传的文件块序号数组，用于中断续传 与 needBlock 而选一
+   * @param info.body.needBlock 可选的 需要上传的文件块序号数组，用于中断续传 与 passedBlocks 而选一
+   * @param info.config 可选的扩展配置类型参数，用于自定义上传配置
+   * 
+   * @requires
+   * - file: 要上传的文件分片
+   * - fileName：文件名
+   * - fileType：文件类型
+   * - chunkIndex：切片序号，从0开始
+   * - totalChunks：切片总数
+   * - md5：当前文件分片的MD5值，用于校验
+   * - md5All：整个文件的MD5值，用于校验
+   * 
+   * nodejs 示例
+   * ```js
+   * import Koa from 'koa';
+   * import Router from'koa-router';
+   * import koaBody from 'koa-body';
+   * import cors from "koa2-cors";
+   * import fs from 'fs';
+   * import path from 'path';
+   * import MD5 from '@stroll/data/dist/md5';
+   * 
+   * const app = new Koa();
+   * const router = new Router();
+   * 
+   * app.use(
+   *   cors({
+   *     origin: `*`,
+   *     maxAge: 500000,
+   *     credentials: true,
+   *   })
+   * );
+   * 
+   * // 配置 koa-body 中间件来处理文件上传
+   * app.use(koaBody({
+   *   multipart: true,
+   *   formidable: {
+   *     maxFileSize: 100 * 1024 * 1024, // 设置最大文件大小为 100MB
+   *     maxFieldsSize: 10 * 1024 * 1024, // 设置最大字段大小为 10MB
+   *     keepExtensions: true, // 保留文件扩展名
+   *     // uploadDir: path.resolve(__dirname, 'uploads'), // 设置上传文件的目录
+   *   },
+   * }));
+   * // 存储分片文件
+   * const fileInfo: {
+   *   fileArr: any[],
+   *   length: number
+   * } = {
+   *   length: 0,
+   *   fileArr: []
+   * }
+   * // 文件上传接口
+   * router.post('/upload', async (ctx: any) => {
+   *   try {
+   *     const { chunkIndex, totalChunks, fileName, md5 } = ctx.request.body;
+   *     if (!chunkIndex || !totalChunks || !fileName || !md5) {
+   *       ctx.status = 400;
+   *       ctx.body = { error: 'Missing required fields' };
+   *       return;
+   *     }
+   *     if(!fileInfo.fileArr || fileInfo.fileArr.length === 0) {
+   *       fileInfo.fileArr = Array(totalChunks|0);
+   *     }
+   *     const file = ctx.request.files?.file;
+   *     if (!file) {
+   *       ctx.status = 400;
+   *       ctx.body = { error: 'File not found in request' };
+   *       return;
+   *     }
+   *     // 计算上传分片的 md5 值
+   *     const chunkBuffer = fs.readFileSync(file.filepath);
+   *     const serverMd5Chunk = MD5(chunkBuffer.toString());
+   *     
+   *     // 验证客户端发送的 md5 值与服务器计算的 md5 值是否一致
+   *     if (serverMd5Chunk !== md5) {
+   *       ctx.status = 400;
+   *       ctx.body = { error: `MD5不匹配的块${chunkIndex}: 预期的 ${md5}, 得到 ${serverMd5Chunk}` };
+   *       return;
+   *     }
+   *     fileInfo.fileArr[chunkIndex] = chunkBuffer;
+   *     fileInfo.length++;
+   * 
+   *     if (+fileInfo.length === +totalChunks) {
+   *       const filePath = path.join(__dirname, `uploads/${fileName}`);
+   *       fs.writeFileSync(filePath, '')
+   *       const BufferData = Buffer.concat(fileInfo.fileArr).toString()
+   *       console.log('BufferData', MD5(BufferData), md5All)
+   *       for (let i = 0; i < fileInfo.fileArr.length; i++) {
+   *         // 追加写入到文件中
+   *         fs.appendFileSync(filePath, fileInfo.fileArr[i])
+   *       }
+   *       fileInfo.fileArr = [];
+   *       fileInfo.length = 0;
+   *       ctx.body = { message: '文件成功上传' };
+   *     } else {
+   *       ctx.body = { message: '块成功上传了' };
+   *     }
+   *   } catch (error: any) {
+   *     console.error('上传期间的错误:', error.message);
+   *     ctx.status = 500;
+   *     ctx.body = { error: '内部服务器错误' };
+   *   }
+   * });
+   * ```
+   * 
+   * app.use(router.routes());
+   * app.use(router.allowedMethods());
+   * 
+   * const port = 6060;
+   * app.listen(port, () => {
+   *   console.log('Server is running on http://localhost:' + port);
+   * });
+   * 
+   * @returns 返回切片操作的结果，具体类型和内容取决于CRUD.SLICEFILE的实现
+   */
+  postSliceFile (
+    info: {
+      url: string;
+      params?: Expand<dataType>;
+      body: {
+        file: File;
+        chunkSize?: number;
+        passedBlocks?: number[];
+        needBlock?: number[];
+      };
+      config?: Expand<configType>;
+    },
+    onProgress: Function
+  ){
+    return CRUD.POSTSLICEFILE.call(this, info, onProgress);
+  }
+  /** 文件分块上传
+   * 
+   * @param info 包含文件切片所需信息的对象
+   * @param info.url 文件上传的URL地址
+   * @param info.params 可选的扩展数据类型参数，用于自定义上传的其他信息
+   * @param info.body 包含文件及切片相关参数的对象
+   * @param info.body.file 要上传的文件对象
+   * @param info.body.chunkSize 可选的 每个文件块的大小，默认一片为（1024 * 1024 * 2）
+   * @param info.body.passedBlocks 可选的 已上传的文件块序号数组，用于中断续传 与 needBlock 而选一
+   * @param info.body.needBlock 可选的 需要上传的文件块序号数组，用于中断续传 与 passedBlocks 而选一
+   * @param info.config 可选的扩展配置类型参数，用于自定义上传配置
+   * 
+   * @requires
+   * - file: 要上传的文件分片
+   * - fileName：文件名
+   * - fileType：文件类型
+   * - chunkIndex：切片序号，从0开始
+   * - totalChunks：切片总数
+   * - md5：当前文件分片的MD5值，用于校验
+   * - md5All：整个文件的MD5值，用于校验
+   * 
+   * nodejs 示例
+   * ```js
+   * import Koa from 'koa';
+   * import Router from'koa-router';
+   * import koaBody from 'koa-body';
+   * import cors from "koa2-cors";
+   * import fs from 'fs';
+   * import path from 'path';
+   * import MD5 from '@stroll/data/dist/md5';
+   * 
+   * const app = new Koa();
+   * const router = new Router();
+   * 
+   * app.use(
+   *   cors({
+   *     origin: `*`,
+   *     maxAge: 500000,
+   *     credentials: true,
+   *   })
+   * );
+   * 
+   * // 配置 koa-body 中间件来处理文件上传
+   * app.use(koaBody({
+   *   multipart: true,
+   *   formidable: {
+   *     maxFileSize: 100 * 1024 * 1024, // 设置最大文件大小为 100MB
+   *     maxFieldsSize: 10 * 1024 * 1024, // 设置最大字段大小为 10MB
+   *     keepExtensions: true, // 保留文件扩展名
+   *     // uploadDir: path.resolve(__dirname, 'uploads'), // 设置上传文件的目录
+   *   },
+   * }));
+   * // 存储分片文件
+   * const fileInfo: {
+   *   fileArr: any[],
+   *   length: number
+   * } = {
+   *   length: 0,
+   *   fileArr: []
+   * }
+   * // 文件上传接口
+   * router.post('/upload', async (ctx: any) => {
+   *   try {
+   *     const { chunkIndex, totalChunks, fileName, md5 } = ctx.request.body;
+   *     if (!chunkIndex || !totalChunks || !fileName || !md5) {
+   *       ctx.status = 400;
+   *       ctx.body = { error: 'Missing required fields' };
+   *       return;
+   *     }
+   *     if(!fileInfo.fileArr || fileInfo.fileArr.length === 0) {
+   *       fileInfo.fileArr = Array(totalChunks|0);
+   *     }
+   *     const file = ctx.request.files?.file;
+   *     if (!file) {
+   *       ctx.status = 400;
+   *       ctx.body = { error: 'File not found in request' };
+   *       return;
+   *     }
+   *     // 计算上传分片的 md5 值
+   *     const chunkBuffer = fs.readFileSync(file.filepath);
+   *     const serverMd5Chunk = MD5(chunkBuffer.toString());
+   *     
+   *     // 验证客户端发送的 md5 值与服务器计算的 md5 值是否一致
+   *     if (serverMd5Chunk !== md5) {
+   *       ctx.status = 400;
+   *       ctx.body = { error: `MD5不匹配的块${chunkIndex}: 预期的 ${md5}, 得到 ${serverMd5Chunk}` };
+   *       return;
+   *     }
+   *     fileInfo.fileArr[chunkIndex] = chunkBuffer;
+   *     fileInfo.length++;
+   * 
+   *     if (+fileInfo.length === +totalChunks) {
+   *       const filePath = path.join(__dirname, `uploads/${fileName}`);
+   *       fs.writeFileSync(filePath, '')
+   *       const BufferData = Buffer.concat(fileInfo.fileArr).toString()
+   *       console.log('BufferData', MD5(BufferData), md5All)
+   *       for (let i = 0; i < fileInfo.fileArr.length; i++) {
+   *         // 追加写入到文件中
+   *         fs.appendFileSync(filePath, fileInfo.fileArr[i])
+   *       }
+   *       fileInfo.fileArr = [];
+   *       fileInfo.length = 0;
+   *       ctx.body = { message: '文件成功上传' };
+   *     } else {
+   *       ctx.body = { message: '块成功上传了' };
+   *     }
+   *   } catch (error: any) {
+   *     console.error('上传期间的错误:', error.message);
+   *     ctx.status = 500;
+   *     ctx.body = { error: '内部服务器错误' };
+   *   }
+   * });
+   * 
+   * 
+   * app.use(router.routes());
+   * app.use(router.allowedMethods());
+   * 
+   * const port = 6060;
+   * app.listen(port, () => {
+   *   console.log('Server is running on http://localhost:' + port);
+   * });
+   * ```
+   * 
+   * @returns 返回切片操作的结果，具体类型和内容取决于CRUD.SLICEFILE的实现
+   */
+  static postSliceFile (
+    info: {
+      url: string;
+      params?: Expand<dataType>;
+      body: {
+        file: File;
+        chunkSize?: number;
+        passedBlocks?: number[];
+        needBlock?: number[];
+      };
+      config?: Expand<configType>;
+    },
+    onProgress: Function
+  ){
+    return CRUD.POSTSLICEFILE.call(this, info, onProgress);
+  }
+
   /** 用于更新资源
    *
    * @param param - {url, params, body,}
@@ -932,7 +1214,7 @@ export class http {
    * - 需要 返回 流数据
    * - nodejs可以使用 import {PassThrough} from "stream";
    *
-   * 示例
+   * nodejs 示例
    * ```js
    * import Koa from "koa";
    * import Router from "koa-router";
@@ -986,7 +1268,7 @@ export class http {
    * - 需要 返回 流数据
    * - nodejs可以使用 import {PassThrough} from "stream";
    *
-   * 示例
+   * nodejs 示例
    * ```js
    * import Koa from "koa";
    * import Router from "koa-router";

@@ -6,15 +6,6 @@ npm i -S @stroll/http
 ```js
 import http from "@stroll/http";
 ```
-```js
-let data = await response.text()
-if(data){
-  if (isJSON(data)) {
-    data = JSON.parse(data);
-  }
-}
-response.data = data
-```
 调用
 ```js
 /** config 配置
@@ -150,6 +141,36 @@ HTTP.postFileForm({
 }, (res) => {
   console.log('进度', res)
 }).then((res) => {
+  console.log('res', res.data)
+})
+
+/** 文件分块上传
+   * 实际分片发送数据
+   * - file: 要上传的文件分片
+   * - fileName：文件名
+   * - fileType：文件类型
+   * - chunkIndex：切片序号，从0开始
+   * - totalChunks：切片总数
+   * - md5：当前文件分片的MD5值，用于校验
+   * - md5All：整个文件的MD5值，用于校验
+   * 
+   * @returns 返回切片操作的结果，具体类型和内容取决于CRUD.SLICEFILE的实现
+   */
+HTTP.postSliceFile(
+  {
+    url:'/test',
+    params: {b:1},
+    body: {
+      file：File, // 要上传的文件对象
+      chunkSize: number, // 可选的 每个文件块的大小，默认一片为（1024 * 1024 * 2）
+      passedBlocks: number[], // 可选的 已上传的文件块序号数组，用于中断续传 与 needBlock 而选一
+      needBlock: number[], // 可选的 需要上传的文件块序号数组，用于中断续传 与 passedBlocks 而选一
+    },
+  }
+  (res) => {
+    console.log('进度', res)
+  }
+).then((res) => {
   console.log('res', res.data)
 })
 ```

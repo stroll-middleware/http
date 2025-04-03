@@ -19,7 +19,7 @@ export function PUTFORM(
   config.url = params ? spliceUrl(url, params) : url;
   config.body = formData(body);
   config.method = "PUT";
-  return this.request(config);
+  return this.request(config, true);
 }
 
 export default PUTFORM;

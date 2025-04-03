@@ -27,7 +27,7 @@ export function TRACE (
   config.body = (body && typeof body !== 'string') ? JSON.stringify(body) : body;
   config.method = 'TRACE'
   
-  return this.request(config)
+  return this.request(config, true)
 }
 
 export default TRACE;
