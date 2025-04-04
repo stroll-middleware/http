@@ -850,7 +850,7 @@ export class http {
    * import cors from "koa2-cors";
    * import fs from 'fs';
    * import path from 'path';
-   * import MD5 from '@stroll/data/dist/md5';
+   * import {webMd5} from '@stroll/node-data';
    * 
    * const app = new Koa();
    * const router = new Router();
@@ -901,7 +901,7 @@ export class http {
    *     }
    *     // 计算上传分片的 md5 值
    *     const chunkBuffer = fs.readFileSync(file.filepath);
-   *     const serverMd5Chunk = MD5(chunkBuffer.toString());
+   *     const serverMd5Chunk = webMd5(chunkBuffer.toString());
    *     
    *     // 验证客户端发送的 md5 值与服务器计算的 md5 值是否一致
    *     if (serverMd5Chunk !== md5) {
@@ -916,7 +916,7 @@ export class http {
    *       const filePath = path.join(__dirname, `uploads/${fileName}`);
    *       fs.writeFileSync(filePath, '')
    *       const BufferData = Buffer.concat(fileInfo.fileArr).toString()
-   *       console.log('BufferData', MD5(BufferData), md5All)
+   *       console.log('BufferData', webMd5(BufferData), md5All)
    *       for (let i = 0; i < fileInfo.fileArr.length; i++) {
    *         // 追加写入到文件中
    *         fs.appendFileSync(filePath, fileInfo.fileArr[i])
@@ -990,7 +990,7 @@ export class http {
    * import cors from "koa2-cors";
    * import fs from 'fs';
    * import path from 'path';
-   * import MD5 from '@stroll/data/dist/md5';
+   * import webMd5 from '@stroll/node-data';
    * 
    * const app = new Koa();
    * const router = new Router();
@@ -1041,7 +1041,7 @@ export class http {
    *     }
    *     // 计算上传分片的 md5 值
    *     const chunkBuffer = fs.readFileSync(file.filepath);
-   *     const serverMd5Chunk = MD5(chunkBuffer.toString());
+   *     const serverMd5Chunk = webMd5(chunkBuffer.toString());
    *     
    *     // 验证客户端发送的 md5 值与服务器计算的 md5 值是否一致
    *     if (serverMd5Chunk !== md5) {
@@ -1056,7 +1056,7 @@ export class http {
    *       const filePath = path.join(__dirname, `uploads/${fileName}`);
    *       fs.writeFileSync(filePath, '')
    *       const BufferData = Buffer.concat(fileInfo.fileArr).toString()
-   *       console.log('BufferData', MD5(BufferData), md5All)
+   *       console.log('BufferData', webMd5(BufferData), md5All)
    *       for (let i = 0; i < fileInfo.fileArr.length; i++) {
    *         // 追加写入到文件中
    *         fs.appendFileSync(filePath, fileInfo.fileArr[i])
